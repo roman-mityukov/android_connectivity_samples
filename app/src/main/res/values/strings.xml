@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">test_connectivity</string>
+    <string name="content_description_button_back">Назад</string>
+</resources>
