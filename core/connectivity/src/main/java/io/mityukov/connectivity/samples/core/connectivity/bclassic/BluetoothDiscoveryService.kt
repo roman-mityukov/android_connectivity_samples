@@ -14,8 +14,9 @@ data class DiscoveryState(
     val discoveredDevices: Set<BluetoothDevice>,
 )
 
-interface BluetoothClassicChatService {
+interface BluetoothDiscoveryService {
     val discoveryFlow: Flow<DiscoveryState>
     fun ensureDiscoverable()
     fun discover()
+    fun clear()
 }

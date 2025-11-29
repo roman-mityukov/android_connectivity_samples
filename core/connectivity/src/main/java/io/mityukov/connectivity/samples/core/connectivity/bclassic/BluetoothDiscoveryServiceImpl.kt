@@ -1,13 +1,16 @@
+@file:SuppressLint("MissingPermission")
+
 package io.mityukov.connectivity.samples.core.connectivity.bclassic
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.mityukov.connectivity.samples.core.log.logd
 import kotlinx.coroutines.CoroutineScope
@@ -18,14 +21,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.UUID
 import javax.inject.Inject
 
-class BluetoothClassicChatServiceImpl @Inject constructor(
+class BluetoothDiscoveryServiceImpl @Inject constructor(
     @param:ApplicationContext private val applicationContext: Context,
     private val permissionChecker: BluetoothPermissionChecker,
-) : BluetoothClassicChatService {
+) : BluetoothDiscoveryService {
     private val mutableStateFlow = MutableStateFlow(
         DiscoveryState(
             progress = DiscoveryProgress.Finished,
@@ -33,10 +34,20 @@ class BluetoothClassicChatServiceImpl @Inject constructor(
             discoveredDevices = setOf(),
         )
     )
-    override val discoveryFlow = mutableStateFlow
 
+    override val discoveryFlow = mutableStateFlow
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val discoveryReceiver = DiscoveryBroadcastReceiver()
     private val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
     private val bluetoothAdapter = bluetoothManager.adapter!!
+
+    override fun clear() {
+        discoveryReceiver.unregister()
+        if (bluetoothAdapter.isDiscovering) {
+            bluetoothAdapter.cancelDiscovery()
+        }
+        coroutineScope.cancel()
+    }
 
     override fun ensureDiscoverable() {
         if (bluetoothAdapter.isEnabled && permissionChecker.permissionsAreGranted) {
@@ -59,12 +70,7 @@ class BluetoothClassicChatServiceImpl @Inject constructor(
             if (bluetoothAdapter.isDiscovering) {
                 bluetoothAdapter.cancelDiscovery()
             }
-
-            val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
-            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
-            applicationContext.registerReceiver(discoveryReceiver, filter)
-
+            discoveryReceiver.register()
             val pairedDevices = bluetoothAdapter.bondedDevices
             coroutineScope.launch {
                 val currentState = discoveryFlow.first()
@@ -78,24 +84,68 @@ class BluetoothClassicChatServiceImpl @Inject constructor(
             }
 
             val startStatus = bluetoothAdapter.startDiscovery()
-            this@BluetoothClassicChatServiceImpl.logd("Start discovery status $startStatus")
+            this@BluetoothDiscoveryServiceImpl.logd("Start discovery status $startStatus")
         } else {
             logd("Bluetooth is disabled or permissions are not granted")
         }
     }
 
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+//    private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+//    private var socket: BluetoothSocket? = null
+//
+//    suspend fun pair(device: BluetoothDevice) = withContext(Dispatchers.IO) {
+//        val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
+//        val bluetoothAdapter = bluetoothManager.adapter
+//        bluetoothAdapter?.cancelDiscovery()
+//
+//        val bound = device.createBond()
+//        this@BluetoothClassicChatServiceImpl.logd("Create bond result $bound")
+//    }
+//
+//    suspend fun connect(device: BluetoothDevice) = withContext(Dispatchers.IO) {
+//        val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
+//        val bluetoothAdapter = bluetoothManager.adapter
+//        bluetoothAdapter?.cancelDiscovery()
+//
+//        socket = device.createRfcommSocketToServiceRecord(uuid)
+//        socket?.connect()
+//    }
 
-    fun deinit() {
-        applicationContext.unregisterReceiver(discoveryReceiver)
-        coroutineScope.cancel()
-    }
+    inner class DiscoveryBroadcastReceiver : BroadcastReceiver() {
+        private var isRegistered: Boolean = false
 
-    private val discoveryReceiver = object : BroadcastReceiver() {
+        @Synchronized
+        fun register() {
+            logd("register")
+            if (isRegistered.not()) {
+                val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+                filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
+                filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+
+                ContextCompat.registerReceiver(
+                    applicationContext,
+                    this,
+                    filter,
+                    ContextCompat.RECEIVER_EXPORTED, // Bluetooth broadcasts are not system broadcasts
+                )
+                isRegistered = true
+            }
+        }
+
+        @Synchronized
+        fun unregister() {
+            logd("unregister")
+            if (isRegistered) {
+                applicationContext.unregisterReceiver(this)
+                isRegistered = false
+            }
+        }
+
         override fun onReceive(context: Context, intent: Intent) {
             val action: String? = intent.action
             when (action) {
                 BluetoothAdapter.ACTION_DISCOVERY_STARTED -> {
+                    logd("onReceive BluetoothAdapter.ACTION_DISCOVERY_STARTED")
                     coroutineScope.launch {
                         val currentState = discoveryFlow.first()
                         discoveryFlow.update {
@@ -105,6 +155,7 @@ class BluetoothClassicChatServiceImpl @Inject constructor(
                 }
 
                 BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                    logd("onReceive BluetoothAdapter.ACTION_DISCOVERY_FINISHED")
                     coroutineScope.launch {
                         val currentState = discoveryFlow.first()
                         discoveryFlow.update {
@@ -114,11 +165,12 @@ class BluetoothClassicChatServiceImpl @Inject constructor(
                 }
 
                 BluetoothDevice.ACTION_FOUND -> {
+                    logd("onReceive BluetoothAdapter.ACTION_FOUND")
                     val device: BluetoothDevice =
                         intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
                     val deviceName = device.name
                     val deviceHardwareAddress = device.address
-                    this@BluetoothClassicChatServiceImpl.logd("Discovered device $deviceName $deviceHardwareAddress")
+                    logd("Discovered device $deviceName $deviceHardwareAddress")
 
                     coroutineScope.launch {
                         val currentState = discoveryFlow.first()
@@ -155,26 +207,5 @@ class BluetoothClassicChatServiceImpl @Inject constructor(
 //                }
             }
         }
-    }
-
-    private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-    private var socket: BluetoothSocket? = null
-
-    suspend fun pair(device: BluetoothDevice) = withContext(Dispatchers.IO) {
-        val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
-        val bluetoothAdapter = bluetoothManager.adapter
-        bluetoothAdapter?.cancelDiscovery()
-
-        val bound = device.createBond()
-        this@BluetoothClassicChatServiceImpl.logd("Create bond result $bound")
-    }
-
-    suspend fun connect(device: BluetoothDevice) = withContext(Dispatchers.IO) {
-        val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
-        val bluetoothAdapter = bluetoothManager.adapter
-        bluetoothAdapter?.cancelDiscovery()
-
-        socket = device.createRfcommSocketToServiceRecord(uuid)
-        socket?.connect()
     }
 }

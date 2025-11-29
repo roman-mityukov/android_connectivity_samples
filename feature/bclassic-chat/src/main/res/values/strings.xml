@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="feature_bclassic_chat_content_description_button_ensure_discoverable">Сделать видимым для обнаружения</string>
-    <string name="feature_bclassic_chat_content_description_button_discover">Обнаружить</string>
+    <string name="feature_bclassic_chat_content_description_button_ensure_discoverable">Видимость</string>
+    <string name="feature_bclassic_chat_content_description_button_discover">Новое сопряжение</string>
 </resources>

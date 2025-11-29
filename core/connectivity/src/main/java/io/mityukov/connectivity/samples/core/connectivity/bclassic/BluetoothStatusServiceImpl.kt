@@ -5,23 +5,23 @@ import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-class BluetoothHealthServiceImpl @Inject constructor(
+class BluetoothStatusServiceImpl @Inject constructor(
     @param:ApplicationContext private val applicationContext: Context,
     private val permissionChecker: BluetoothPermissionChecker,
-) : BluetoothHealthService {
-    override val bluetoothHealth: BluetoothHealthState
+) : BluetoothStatusService {
+    override val status: BluetoothStatus
         get() {
             val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
             val bluetoothAdapter = bluetoothManager.adapter
             val permissionsAreGranted = permissionChecker.permissionsAreGranted
             val state = if (bluetoothAdapter == null) {
-                BluetoothHealthState.NotSupported
+                BluetoothStatus.NotSupported
             } else if (permissionsAreGranted.not()) {
-                BluetoothHealthState.PermissionsNotGranted
+                BluetoothStatus.PermissionsNotGranted
             } else if (bluetoothAdapter.isEnabled.not()) {
-                BluetoothHealthState.Disabled
+                BluetoothStatus.Disabled
             } else {
-                BluetoothHealthState.Ok
+                BluetoothStatus.Ok
             }
             return state
         }
