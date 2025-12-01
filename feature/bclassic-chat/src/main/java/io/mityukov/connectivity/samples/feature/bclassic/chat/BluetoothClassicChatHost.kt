@@ -7,6 +7,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.mityukov.connectivity.samples.feature.bclassic.chat.discovery.DiscoveryPane
 import io.mityukov.connectivity.samples.feature.bclassic.chat.paired.PairedDevicesPane
 
 @Composable
@@ -45,7 +46,8 @@ fun BluetoothClassicChatHost(
                 )
             }
             entry<DiscoveryRoute> {
-                DiscoveryPan(
+                DiscoveryPane(
+                    snackbarHostState = snackbarHostState,
                     onBack = {
                         backStack.removeLastOrNull()
                     }

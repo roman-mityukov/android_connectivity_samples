@@ -18,17 +18,15 @@ interface BluetoothPermissionChecker {
                 )
             }
         val extraRuntimePermissions: List<String>
-            get() = if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q ||
+            get() = if (
+                Build.VERSION.SDK_INT == Build.VERSION_CODES.Q ||
                 Build.VERSION.SDK_INT == Build.VERSION_CODES.R
             ) {
-                listOf(
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-                )
+                listOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             } else {
                 listOf()
             }
     }
-
     val regularRuntimePermissionsGranted: Boolean
     val extraRuntimePermissionGranted: Boolean
 }

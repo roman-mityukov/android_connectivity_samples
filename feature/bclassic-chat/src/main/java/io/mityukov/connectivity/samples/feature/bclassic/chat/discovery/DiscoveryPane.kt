@@ -1,16 +1,12 @@
-package io.mityukov.connectivity.samples.feature.bclassic.chat.paired
+package io.mityukov.connectivity.samples.feature.bclassic.chat.discovery
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -32,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -41,23 +36,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPermissionChecker
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatus
-import io.mityukov.connectivity.samples.core.connectivity.bclassic.PairedDevice
-import io.mityukov.connectivity.samples.feature.bclassic.chat.R
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.DiscoveredDevice
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusEvent
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusPane
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusState
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusViewModel
 import io.mityukov.connectivity.samples.core.common.R as CommonR
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PairedDevicesPane(
+internal fun DiscoveryPane(
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
-    onDiscovery: () -> Unit,
-    onDeviceSelected: () -> Unit,
 ) {
-    val viewModel: PairedDevicesViewModel = hiltViewModel()
+    val viewModel: DiscoveryViewModel = hiltViewModel()
     val viewModelState by viewModel.stateFlow.collectAsStateWithLifecycle()
 
     val statusViewModel: StatusViewModel = hiltViewModel()
@@ -75,7 +67,7 @@ fun PairedDevicesPane(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(text = "Связанные устройства")
+                    Text(text = "Обнаружение")
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -90,54 +82,50 @@ fun PairedDevicesPane(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         contentWindowInsets = WindowInsets.safeContent
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            if ((statusViewModelState as? StatusState.Status)?.status == BluetoothStatus.Ok) {
-                Row(horizontalArrangement = Arrangement.Center) {
-                    Button(onClick = onDiscovery) {
-                        Text(text = stringResource(R.string.feature_bclassic_chat_content_description_button_discover))
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    EnsureDiscoverablePane(snackbarHostState = snackbarHostState)
+        if ((statusViewModelState as? StatusState.Status)?.status == BluetoothStatus.Ok) {
+            DiscoveryPaneContent(
+                modifier = Modifier.padding(innerPadding),
+                viewModelState = viewModelState,
+                onFirstDiscovery = {
+                    viewModel.add(DiscoveryEvent.StartFirstDiscovery)
+                },
+                onRefresh = {
+                    viewModel.add(DiscoveryEvent.RefreshDiscovery)
+                },
+                onCancel = {
+                    viewModel.add(DiscoveryEvent.StopDiscovery)
+                },
+                onDeviceSelect = { device ->
+
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                PairedDevicesContent(
-                    modifier = Modifier.weight(1f),
-                    viewModelState = viewModelState,
-                    onDeviceSelected = onDeviceSelected,
-                    onGetPairedDevices = {
-                        viewModel.add(PairedDevicesEvent.GetPairedDevices)
-                    }
-                )
-            } else {
-                StatusPane(
-                    viewModelState = statusViewModelState,
-                    regularPermissions = BluetoothPermissionChecker.regularRuntimePermissions,
-                    extraPermissions = BluetoothPermissionChecker.extraRuntimePermissions,
-                )
-            }
+            )
+        } else {
+            StatusPane(
+                modifier = Modifier.padding(innerPadding),
+                viewModelState = statusViewModelState,
+                regularPermissions = BluetoothPermissionChecker.regularRuntimePermissions,
+                extraPermissions = BluetoothPermissionChecker.extraRuntimePermissions,
+            )
         }
     }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-internal fun PairedDevicesContent(
+fun DiscoveryPaneContent(
     modifier: Modifier,
-    viewModelState: PairedDevicesState,
-    onGetPairedDevices: () -> Unit,
-    onDeviceSelected: () -> Unit,
+    viewModelState: DiscoveryState,
+    onFirstDiscovery: () -> Unit,
+    onRefresh: () -> Unit,
+    onCancel: () -> Unit,
+    onDeviceSelect: (DiscoveredDevice) -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-
     DisposableEffect(lifecycleOwner) {
         val observer = object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 super.onStart(owner)
-                onGetPairedDevices()
+                onFirstDiscovery()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -147,46 +135,53 @@ internal fun PairedDevicesContent(
     }
 
     when (viewModelState) {
-        is PairedDevicesState.Failure -> {
-
+        DiscoveryState.Pending -> {
+            CircularProgressIndicator()
         }
 
-        is PairedDevicesState.Success -> {
-            val pairedDevices = viewModelState.devices
+        is DiscoveryState.Failure -> {
+            Text("Не удалось обнаружить устройства поблизости")
+        }
 
-            if (pairedDevices.isEmpty()) {
-                Column {
-                    Text(
-                        "Нет связанных устройств, добавьте новое с помощью кнопки “Новое сопряжение”\n" +
-                                "\n" +
-                                "или\n" +
-                                "\n" +
-                                "Сделайте Ваше устройство видимым для других с помощью кнопки “Сделать видимым”"
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = onGetPairedDevices
-                    ) {
+        is DiscoveryState.Devices -> {
+            Column(
+                modifier = modifier.fillMaxWidth()
+            ) {
+                if (viewModelState.inProgress) {
+                    Row {
+                        CircularProgressIndicator()
+                        Button(onClick = onCancel) {
+                            Text("Отменить")
+                        }
+                    }
+                } else {
+                    Button(onClick = onRefresh) {
                         Text("Обновить")
                     }
                 }
-            } else {
-                LazyColumn {
-                    items(items = pairedDevices.toList()) { device ->
-                        DeviceItem(device = device, onClick = onDeviceSelected)
+                if (viewModelState.devices.isEmpty()) {
+                    Text("Не удалось обнаружить устройства поблизости")
+                } else {
+                    LazyColumn {
+                        items(
+                            items = viewModelState.devices,
+                            key = { it.name + it.address }) { device ->
+                            DeviceItem(
+                                device = device,
+                                onClick = {
+                                    onDeviceSelect(device)
+                                },
+                            )
+                        }
                     }
                 }
             }
-        }
-
-        PairedDevicesState.Pending -> {
-            CircularProgressIndicator()
         }
     }
 }
 
 @Composable
-private fun DeviceItem(device: PairedDevice, onClick: () -> Unit) {
+private fun DeviceItem(device: DiscoveredDevice, onClick: () -> Unit) {
     Column(modifier = Modifier.clickable(enabled = true, onClick = onClick)) {
         Text(device.name ?: "NoName")
         Text(device.address)
