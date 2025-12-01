@@ -33,7 +33,7 @@ fun EnsureDiscoverablePane(
             val status = (viewModelState as EnsureDiscoverableState.Failure).status
             when (status) {
                 BluetoothStatus.Disabled -> "Bluetooth отключен"
-                BluetoothStatus.PermissionsNotGranted -> "Нужно предоставить разрешения"
+                BluetoothStatus.RegularPermissionsNotGranted -> "Нужно предоставить разрешения"
                 else -> null
             }
         }

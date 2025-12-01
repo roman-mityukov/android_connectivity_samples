@@ -50,7 +50,7 @@ class BluetoothDiscoveryServiceImpl @Inject constructor(
     }
 
     override fun ensureDiscoverable() {
-        if (bluetoothAdapter.isEnabled && permissionChecker.permissionsAreGranted) {
+        if (bluetoothAdapter.isEnabled && permissionChecker.regularRuntimePermissionsGranted) {
             if (bluetoothAdapter.scanMode != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
                 logd("Ensure discoverable")
                 val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
@@ -66,7 +66,7 @@ class BluetoothDiscoveryServiceImpl @Inject constructor(
     }
 
     override fun discover() {
-        if (bluetoothAdapter.isEnabled && permissionChecker.permissionsAreGranted) {
+        if (bluetoothAdapter.isEnabled && permissionChecker.regularRuntimePermissionsGranted) {
             if (bluetoothAdapter.isDiscovering) {
                 bluetoothAdapter.cancelDiscovery()
             }

@@ -1,8 +1,8 @@
 package io.mityukov.connectivity.samples.feature.bclassic.chat.paired
 
-import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPermissionChecker
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatus
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.PairedDevice
 import io.mityukov.connectivity.samples.feature.bclassic.chat.R
@@ -110,6 +111,8 @@ fun PairedDevicesPane(
             PairedDevicesContent(
                 modifier = Modifier.weight(1f),
                 viewModelState = viewModelState,
+                extraPermissions = BluetoothPermissionChecker.extraRuntimePermissions,
+                regularPermissions = BluetoothPermissionChecker.regularRuntimePermissions,
                 onDeviceSelected = onDeviceSelected,
                 onGetPairedDevices = {
                     viewModel.add(PairedDevicesEvent.GetPairedDevices)
@@ -124,24 +127,28 @@ fun PairedDevicesPane(
 internal fun PairedDevicesContent(
     modifier: Modifier,
     viewModelState: PairedDevicesState,
+    regularPermissions: List<String>,
+    extraPermissions: List<String>,
     onGetPairedDevices: () -> Unit,
     onDeviceSelected: () -> Unit,
 ) {
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
 
-    val multiplePermissionsState = rememberMultiplePermissionsState(
-        permissions = buildList {
-            add(Manifest.permission.BLUETOOTH_SCAN)
-            add(Manifest.permission.BLUETOOTH_CONNECT)
-        }
-    )
+    val regularMultiplePermissionsState =
+        rememberMultiplePermissionsState(permissions = regularPermissions)
+    val extraMultiplePermissionsState =
+        rememberMultiplePermissionsState(permissions = extraPermissions)
 
     when (viewModelState) {
         is PairedDevicesState.Failure -> {
             when (viewModelState.status) {
                 BluetoothStatus.NotSupported -> {
                     Text("Это устройство не поддерживает Bluetooth")
+                }
+
+                BluetoothStatus.LocationNotSupported -> {
+                    Text("Это устройство не поддерживает геолокацию")
                 }
 
                 BluetoothStatus.Disabled -> {
@@ -155,13 +162,35 @@ internal fun PairedDevicesContent(
                     }
                 }
 
-                BluetoothStatus.PermissionsNotGranted -> {
+                BluetoothStatus.LocationDisabled -> {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text("Для работы Bluetooth нужно включить геолокацию")
+                        Button(onClick = {
+                            launcher.launch(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                        }) {
+                            Text("Включить")
+                        }
+                    }
+                }
+
+                BluetoothStatus.RegularPermissionsNotGranted -> {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text("Чтобы связаться с другим устройством по Bluetooth нужно предоставить разрешения")
                         Button(onClick = {
-                            multiplePermissionsState.launchMultiplePermissionRequest()
+                            regularMultiplePermissionsState.launchMultiplePermissionRequest()
                         }) {
                             Text("Предоставить")
+                        }
+                    }
+                }
+
+                BluetoothStatus.ExtraPermissionsNotGranted -> {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text("Чтобы связаться с другим устройством по Bluetooth дополнительно нужно разрешить использование геолокации в фоне")
+                        Button(onClick = {
+                            extraMultiplePermissionsState.launchMultiplePermissionRequest()
+                        }) {
+                            Text("Разрешить")
                         }
                     }
                 }
