@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.connectivity.samples.android.library)
     alias(libs.plugins.connectivity.samples.hilt)
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
@@ -11,4 +12,5 @@ dependencies {
     implementation(project(":core:log"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
 }

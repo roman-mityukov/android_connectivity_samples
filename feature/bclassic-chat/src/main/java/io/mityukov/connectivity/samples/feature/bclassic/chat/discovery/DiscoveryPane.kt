@@ -47,6 +47,7 @@ import io.mityukov.connectivity.samples.core.common.R as CommonR
 @Composable
 internal fun DiscoveryPane(
     snackbarHostState: SnackbarHostState,
+    onDeviceSelect: (DiscoveredDevice) -> Unit,
     onBack: () -> Unit,
 ) {
     val viewModel: DiscoveryViewModel = hiltViewModel()
@@ -95,9 +96,7 @@ internal fun DiscoveryPane(
                 onCancel = {
                     viewModel.add(DiscoveryEvent.StopDiscovery)
                 },
-                onDeviceSelect = { device ->
-
-                }
+                onDeviceSelect = onDeviceSelect
             )
         } else {
             StatusPane(

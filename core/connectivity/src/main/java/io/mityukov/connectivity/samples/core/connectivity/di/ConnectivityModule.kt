@@ -4,6 +4,8 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothConnectionService
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothConnectionServiceImpl
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothDiscoveryService
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothDiscoveryServiceImpl
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPairedDevicesService
@@ -27,4 +29,7 @@ abstract class ConnectivityModule {
 
     @Binds
     internal abstract fun bindsBluetoothDiscoveryService(impl: BluetoothDiscoveryServiceImpl): BluetoothDiscoveryService
+
+    @Binds
+    internal abstract fun bindsBluetoothConnectionService(impl: BluetoothConnectionServiceImpl): BluetoothConnectionService
 }

@@ -101,14 +101,7 @@ class BluetoothDiscoveryServiceImpl @Inject constructor(
 //    private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 //    private var socket: BluetoothSocket? = null
 //
-//    suspend fun pair(device: BluetoothDevice) = withContext(Dispatchers.IO) {
-//        val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
-//        val bluetoothAdapter = bluetoothManager.adapter
-//        bluetoothAdapter?.cancelDiscovery()
-//
-//        val bound = device.createBond()
-//        this@BluetoothClassicChatServiceImpl.logd("Create bond result $bound")
-//    }
+
 //
 //    suspend fun connect(device: BluetoothDevice) = withContext(Dispatchers.IO) {
 //        val bluetoothManager = applicationContext.getSystemService(BluetoothManager::class.java)
