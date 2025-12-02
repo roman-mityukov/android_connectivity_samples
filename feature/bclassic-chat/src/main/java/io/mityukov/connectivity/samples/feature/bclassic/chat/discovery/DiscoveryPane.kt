@@ -33,10 +33,12 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPermissionChecker
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatus
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.DiscoveredDevice
+import io.mityukov.connectivity.samples.core.log.Logger.logd
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusEvent
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusPane
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusState
@@ -47,6 +49,7 @@ import io.mityukov.connectivity.samples.core.common.R as CommonR
 @Composable
 internal fun DiscoveryPane(
     snackbarHostState: SnackbarHostState,
+    onDeviceSelect: (DiscoveredDevice) -> Unit,
     onBack: () -> Unit,
 ) {
     val viewModel: DiscoveryViewModel = hiltViewModel()
@@ -54,6 +57,8 @@ internal fun DiscoveryPane(
 
     val statusViewModel: StatusViewModel = hiltViewModel()
     val statusViewModelState by statusViewModel.stateFlow.collectAsStateWithLifecycle()
+
+    logd("LocalViewModelStoreOwner.current ${LocalViewModelStoreOwner.current}")
 
     val windowInfo = LocalWindowInfo.current
 
@@ -95,9 +100,7 @@ internal fun DiscoveryPane(
                 onCancel = {
                     viewModel.add(DiscoveryEvent.StopDiscovery)
                 },
-                onDeviceSelect = { device ->
-
-                }
+                onDeviceSelect = onDeviceSelect
             )
         } else {
             StatusPane(

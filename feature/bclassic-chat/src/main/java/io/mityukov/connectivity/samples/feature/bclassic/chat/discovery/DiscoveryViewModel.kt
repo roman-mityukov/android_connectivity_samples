@@ -7,10 +7,9 @@ import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothDisc
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothDiscoveryService
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatus
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.DiscoveredDevice
-import io.mityukov.connectivity.samples.core.connectivity.bclassic.StartDiscoveryResult
+import io.mityukov.connectivity.samples.core.log.logd
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -74,6 +73,7 @@ class DiscoveryViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        logd("onCleared")
         bluetoothDiscoveryService.clear()
     }
 }

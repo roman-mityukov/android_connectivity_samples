@@ -5,9 +5,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPairedDevicesService
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatus
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.DiscoveredDevice
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.PairedDevice
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.PairedDevicesResult
 import io.mityukov.connectivity.samples.core.log.logd
+import io.mityukov.connectivity.samples.feature.bclassic.chat.paired.PairedDevicesState.Failure
+import io.mityukov.connectivity.samples.feature.bclassic.chat.paired.PairedDevicesState.Success
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -22,6 +25,7 @@ internal sealed interface PairedDevicesState {
 
 internal sealed interface PairedDevicesEvent {
     data object GetPairedDevices : PairedDevicesEvent
+    data class NewPairingCandidate(val candidate: DiscoveredDevice) : PairedDevicesEvent
 }
 
 @HiltViewModel
@@ -36,12 +40,18 @@ internal class PairedDevicesViewModel @Inject constructor(
             PairedDevicesEvent.GetPairedDevices -> {
                 viewModelScope.launch {
                     val state = when (val result = pairedDevicesService.getPairedDevices()) {
-                        is PairedDevicesResult.Failure -> PairedDevicesState.Failure(result.status)
-                        is PairedDevicesResult.Success -> PairedDevicesState.Success(result.devices)
+                        is PairedDevicesResult.Failure -> Failure(result.status)
+                        is PairedDevicesResult.Success -> Success(result.devices)
                     }
                     mutableStateFlow.update {
                         state
                     }
+                }
+            }
+
+            is PairedDevicesEvent.NewPairingCandidate -> {
+                viewModelScope.launch {
+                    pairedDevicesService.startPairing(event.candidate)
                 }
             }
         }

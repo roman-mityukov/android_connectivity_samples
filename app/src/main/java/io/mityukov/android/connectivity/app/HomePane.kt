@@ -16,12 +16,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import io.mityukov.connectivity.samples.core.log.Logger.logd
 
 @Composable
 fun HomePane(
     onBluetoothSelected: () -> Unit,
     onUsbSelected: () -> Unit,
 ) {
+    logd("LocalViewModelStoreOwner.current ${LocalViewModelStoreOwner.current}")
+
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Box(
             modifier = Modifier

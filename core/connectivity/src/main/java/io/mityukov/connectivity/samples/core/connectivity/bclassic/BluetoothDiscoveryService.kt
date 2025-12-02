@@ -1,8 +1,9 @@
 package io.mityukov.connectivity.samples.core.connectivity.bclassic
 
-import android.bluetooth.BluetoothDevice
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class DiscoveredDevice(val name: String?, val address: String)
 
 sealed interface BluetoothDiscoveryProgress {
