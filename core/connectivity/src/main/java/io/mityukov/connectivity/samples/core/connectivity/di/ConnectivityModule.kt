@@ -4,22 +4,27 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothClassicChatService
-import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothClassicChatServiceImpl
-import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothHealthService
-import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothHealthServiceImpl
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothDiscoveryService
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothDiscoveryServiceImpl
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPairedDevicesService
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPairedDevicesServiceImpl
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatusService
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatusServiceImpl
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPermissionChecker
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPermissionCheckerImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface ConnectivityModule {
+abstract class ConnectivityModule {
     @Binds
-    fun bindsBluetoothPermissionChecker(impl: BluetoothPermissionCheckerImpl): BluetoothPermissionChecker
+    internal abstract fun bindsBluetoothPermissionChecker(impl: BluetoothPermissionCheckerImpl): BluetoothPermissionChecker
 
     @Binds
-    fun bindsBluetoothHealthService(impl: BluetoothHealthServiceImpl): BluetoothHealthService
+    internal abstract fun bindsBluetoothStatusService(impl: BluetoothStatusServiceImpl): BluetoothStatusService
 
     @Binds
-    fun bindsBluetoothClassicChatService(impl: BluetoothClassicChatServiceImpl): BluetoothClassicChatService
+    internal abstract fun bindsBluetoothPairedDevicesService(impl: BluetoothPairedDevicesServiceImpl): BluetoothPairedDevicesService
+
+    @Binds
+    internal abstract fun bindsBluetoothDiscoveryService(impl: BluetoothDiscoveryServiceImpl): BluetoothDiscoveryService
 }

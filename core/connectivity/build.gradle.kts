@@ -7,6 +7,8 @@ android {
     namespace = "io.mityukov.connectivity.samples.core.connectivity"
 }
 dependencies {
+    implementation(project(":core:common"))
     implementation(project(":core:log"))
+    implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
 }

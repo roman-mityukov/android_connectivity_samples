@@ -1,6 +1,5 @@
 package io.mityukov.connectivity.samples.core.connectivity.bclassic
 
-import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
@@ -10,15 +9,24 @@ import javax.inject.Inject
 class BluetoothPermissionCheckerImpl @Inject constructor(
     @param:ApplicationContext private val applicationContext: Context
 ) : BluetoothPermissionChecker {
-    override val permissionsAreGranted: Boolean
-        get() {
-            return ContextCompat.checkSelfPermission(
+
+    override val regularRuntimePermissionsGranted: Boolean
+        get() = BluetoothPermissionChecker.regularRuntimePermissions.all { permission ->
+            ContextCompat.checkSelfPermission(
                 applicationContext,
-                Manifest.permission.BLUETOOTH_SCAN
-            ) == PackageManager.PERMISSION_GRANTED &&
-                    ContextCompat.checkSelfPermission(
-                        applicationContext,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) == PackageManager.PERMISSION_GRANTED
+                permission
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+
+    override val extraRuntimePermissionGranted: Boolean
+        get() = if (BluetoothPermissionChecker.extraRuntimePermissions.isEmpty()) {
+            true
+        } else {
+            BluetoothPermissionChecker.extraRuntimePermissions.all { permission ->
+                ContextCompat.checkSelfPermission(
+                    applicationContext,
+                    permission
+                ) == PackageManager.PERMISSION_GRANTED
+            }
         }
 }
