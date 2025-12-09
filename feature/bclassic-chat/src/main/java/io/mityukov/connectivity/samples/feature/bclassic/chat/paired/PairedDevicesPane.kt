@@ -25,10 +25,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
@@ -38,24 +43,29 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothPermissionChecker
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.BluetoothStatus
+import io.mityukov.connectivity.samples.core.connectivity.bclassic.DiscoveredDevice
 import io.mityukov.connectivity.samples.core.connectivity.bclassic.PairedDevice
+import io.mityukov.connectivity.samples.core.log.Logger.logd
 import io.mityukov.connectivity.samples.feature.bclassic.chat.R
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusEvent
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusPane
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusState
 import io.mityukov.connectivity.samples.feature.bclassic.chat.status.StatusViewModel
+import kotlinx.coroutines.launch
 import io.mityukov.connectivity.samples.core.common.R as CommonR
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun PairedDevicesPane(
     snackbarHostState: SnackbarHostState,
+    pairingCandidate: DiscoveredDevice?,
     onBack: () -> Unit,
     onDiscovery: () -> Unit,
-    onDeviceSelected: () -> Unit,
+    onDeviceSelected: (PairedDevice) -> Unit,
 ) {
     val viewModel: PairedDevicesViewModel = hiltViewModel()
     val viewModelState by viewModel.stateFlow.collectAsStateWithLifecycle()
@@ -65,9 +75,17 @@ fun PairedDevicesPane(
 
     val windowInfo = LocalWindowInfo.current
 
+    logd("LocalViewModelStoreOwner.current ${LocalViewModelStoreOwner.current}")
+
     LaunchedEffect(windowInfo.isWindowFocused) {
         if (windowInfo.isWindowFocused) {
             statusViewModel.add(StatusEvent.Check)
+        }
+    }
+
+    LaunchedEffect(pairingCandidate) {
+        if (pairingCandidate != null) {
+            viewModel.add(PairedDevicesEvent.NewPairingCandidate(pairingCandidate))
         }
     }
 
@@ -129,14 +147,14 @@ internal fun PairedDevicesContent(
     modifier: Modifier,
     viewModelState: PairedDevicesState,
     onGetPairedDevices: () -> Unit,
-    onDeviceSelected: () -> Unit,
+    onDeviceSelected: (PairedDevice) -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) {
-                super.onStart(owner)
+            override fun onResume(owner: LifecycleOwner) {
+                super.onResume(owner)
                 onGetPairedDevices()
             }
         }
@@ -171,9 +189,21 @@ internal fun PairedDevicesContent(
                     }
                 }
             } else {
-                LazyColumn {
-                    items(items = pairedDevices.toList()) { device ->
-                        DeviceItem(device = device, onClick = onDeviceSelected)
+                PullToRefreshBox(
+                    isRefreshing = false,
+                    onRefresh = {
+                        onGetPairedDevices()
+                    }
+                ) {
+                    LazyColumn {
+                        items(items = pairedDevices.toList()) { device ->
+                            DeviceItem(
+                                device = device,
+                                onClick = {
+                                    onDeviceSelected(device)
+                                },
+                            )
+                        }
                     }
                 }
             }
